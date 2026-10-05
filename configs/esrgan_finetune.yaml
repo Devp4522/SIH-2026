@@ -1,0 +1,14 @@
+# Stage 2: adversarial fine-tune of the stage-1 generator (sharper texture, more hallucination
+# risk). Run:  python scripts/train.py --config configs/esrgan_finetune.yaml --stage gan
+_base_: edsr_baseline.yaml
+train:
+  out_dir: runs/edsr_gan
+  batch_size: 8
+gan:
+  init_from: runs/edsr_baseline/best.pt
+  epochs: 30
+  lr_g: 5.0e-5
+  lr_d: 1.0e-4
+  adv_weight: 5.0e-3
+  perceptual_weight: 0.0   # >0 uses ImageNet VGG19 on the RGB bands (downloads weights once)
+  d_base: 64

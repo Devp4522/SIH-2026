@@ -1,0 +1,51 @@
+# ---------------------------------------------------------------------------
+# Stage 1 baseline: EDSR, x4 (40 m -> 10 m synthetic pairs, Wald protocol).
+# Every value can be overridden from the CLI:  --set train.epochs=10 model.n_feats=32
+# ---------------------------------------------------------------------------
+data:
+  index_csv: master_patch_index.csv
+  data_root: patches                  # folder containing Ahmedabad/ Guwahati/ Nashik/ New_Delhi/
+  stats_json: normalization_stats.json  # shared p1/p99 stats - DO NOT recompute
+  clip: [0.0, 1.0]                    # clip range after p1/p99 scaling
+  test_city: Nashik                   # held out entirely (307 patches, ~14%). NOT New_Delhi (54% of data)
+  val_mode: spatial                   # spatial (leak-free) | scene (leaks geography across dates)
+  val_fraction: 0.15
+  min_valid_pct: 90
+  scale: 4
+  crop_size: 128                      # HR crop; LR = 32x32
+  crops_per_patch: 4                  # random crops drawn from each 512x512 patch per epoch
+  val_crop_size: 256                  # centre crop for per-epoch validation (speed); test uses full 512
+  augment: true                       # random rotations / flips
+  num_workers: 4                      # set 0 if you hit DataLoader errors on Windows
+  degradation:
+    sigma_range: [0.6, 1.2]           # Gaussian PSF width (HR pixels) sampled per training sample
+    sigma_eval: 0.9                   # fixed PSF for val / test / consistency checks
+    noise_range: [0.0, 0.01]          # additive noise, fraction of band std
+
+model:
+  name: edsr
+  n_resblocks: 16
+  n_feats: 64
+  res_scale: 0.1
+  global_residual: true
+
+train:
+  seed: 42
+  device: auto
+  epochs: 60
+  batch_size: 16
+  val_batch_size: 8
+  lr: 2.0e-4
+  warmup_steps: 500
+  weight_decay: 0.0
+  grad_clip: 1.0
+  amp: true
+  patience: 12
+  resume: true
+  out_dir: runs/edsr_baseline
+  loss:
+    pixel: 1.0            # Charbonnier
+    ssim: 0.1
+    sam: 0.05             # spectral angle -> band ratios / NDVI preserved
+    grad: 0.05            # edge sharpness
+    lr_consistency: 0.1   # SR must re-degrade to the observed input

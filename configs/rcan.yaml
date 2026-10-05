@@ -1,0 +1,11 @@
+# Stronger CNN with channel attention (learns inter-band weighting). ~2x slower than EDSR.
+_base_: edsr_baseline.yaml
+model:
+  name: rcan
+  n_groups: 5
+  n_resblocks: 10
+  n_feats: 64
+  reduction: 16
+train:
+  batch_size: 12
+  out_dir: runs/rcan

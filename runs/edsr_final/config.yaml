@@ -1,0 +1,51 @@
+data:
+  index_csv: master_patch_index.csv
+  data_root: patches
+  stats_json: normalization_stats.json
+  clip:
+  - 0.0
+  - 1.0
+  test_city: none
+  val_mode: spatial
+  val_fraction: 0.15
+  min_valid_pct: 90
+  scale: 4
+  crop_size: 128
+  crops_per_patch: 4
+  val_crop_size: 256
+  augment: true
+  num_workers: 4
+  degradation:
+    sigma_range:
+    - 0.6
+    - 1.2
+    sigma_eval: 0.9
+    noise_range:
+    - 0.0
+    - 0.01
+model:
+  name: edsr
+  n_resblocks: 16
+  n_feats: 64
+  res_scale: 0.1
+  global_residual: true
+train:
+  seed: 42
+  device: auto
+  epochs: 60
+  batch_size: 8
+  val_batch_size: 8
+  lr: 0.0002
+  warmup_steps: 500
+  weight_decay: 0.0
+  grad_clip: 1.0
+  amp: true
+  patience: 12
+  resume: true
+  out_dir: runs/edsr_final
+  loss:
+    pixel: 1.0
+    ssim: 0.1
+    sam: 0.05
+    grad: 0.05
+    lr_consistency: 0.1

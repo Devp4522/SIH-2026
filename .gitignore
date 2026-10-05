@@ -1,0 +1,25 @@
+# data (too large / third-party)
+patches/
+opensr_data/
+*.SAFE/
+demo/*.tif
+*.npy
+*.pkl
+
+# training outputs: keep summaries/figures, drop weights except the final model
+runs/**/last.pt
+runs/**/*.pt
+!runs/edsr_ft_joint/best.pt
+runs/dry_run_*/
+runs/**/per_image.csv
+
+# python / notebooks / local
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.vscode/
+.idea/
+evidence.md
+structure.txt
+scene5_check.png
+requirements-lock.txt
