@@ -122,7 +122,12 @@ srm_project/
 │   ├── infer.py                 # scene -> 2.5 m GeoTIFF + uncertainty GeoTIFF
 │   ├── validate_reference.py    # compare an SR GeoTIFF with your own HR reference
 │   ├── make_figures.py          # all report figures from saved results
-│   └── collect_evidence.py      # dump every config/metric/log into evidence.md
+│   ├── collect_evidence.py      # dump every config/metric/log into evidence.md
+│   └── data_prep/
+│       ├── consolidate_patches.py   # per-scene metadata.csv -> master index
+│       └── validate_patches.py      # band count, NaN %, scaling, negative-value checks
+├── legacy/                      # first baseline (scene split, 8-block EDSR); superseded by srm/
+├── app.py                       # Streamlit live demo (scene SR + live accuracy check)
 ├── docs/figures/                # figures used in this README
 ├── master_patch_index.csv       # patch index (city, scene, location, validity)
 ├── normalization_stats.json     # shared per-band p1/p99 statistics
@@ -149,7 +154,16 @@ Tested on: Windows, Python 3.11, PyTorch 2.6.0 + CUDA 12.4, NVIDIA RTX 3050 Lapt
 
 Place the patch folder so that paths look like `patches/<City>/<Scene_k_YYYY-MM-DD>/patch_XXXX.npy`. Each patch is a `(4, 512, 512)` float32 array: B02, B03, B04, B08, raw digital numbers, with NaN for no-data. The index CSV stores absolute paths from the machine that created it, and the code rewrites them automatically to `--set data.data_root=<your patches folder>`.
 
-Data preparation (source, product level, cloud masking, AOIs): [TO FILL by data team].
+**How the patches were made.**
+1. A Sentinel-2 pre-processing notebook writes, per city and scene, 512 × 512 patches as `(4, H, W)` float32 `.npy` arrays (B02, B03, B04, B08; NaN = no-data) plus a `metadata.csv`. Its columns are `patch_id, city, scene, row_start, col_start, patch_size, valid_percentage`. Source, product level, date/cloud selection, AOIs and cloud masking: [TO FILL by data team].
+2. Consolidate all per-scene metadata into one index. This drops entries whose `.npy` is missing and adds a `global_id`:
+   ```bash
+   python scripts/data_prep/consolidate_patches.py --root patches --out master_patch_index.csv
+   ```
+3. Quality-check a sample of patches per city. It flags band count ≠ 4, > 15% NaN, max > 20,000 (wrong scaling), double scaling, and negative values:
+   ```bash
+   python scripts/data_prep/validate_patches.py master_patch_index.csv
+   ```
 
 ```bash
 python scripts/check_data.py --config configs/edsr_baseline.yaml
@@ -176,6 +190,15 @@ python scripts/train.py --config configs/edsr_baseline.yaml --set train.batch_si
 ```
 
 Training resumes automatically from `last.pt`. On Windows, add `--set data.num_workers=0` if the DataLoader fails.
+
+## Live demo app
+
+```bash
+pip install streamlit
+streamlit run app.py
+```
+- **Super-resolve a scene:** upload a 4-band GeoTIFF or pick one from `demo/`, select an area, then view output, uncertainty, guard and NDVI and download the GeoTIFFs.
+- **Accuracy check:** degrade a held-out patch to 40 m, super-resolve it and score it against the real 10 m patch, live.
 
 ## Evaluation
 
